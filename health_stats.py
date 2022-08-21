@@ -50,11 +50,14 @@ def display_graph(json_list, keys):
     #by_key = group_by_key(health_data)
     # instead of using a dictionary, use health_data converted to a pandas dataframe\
     df = pd.DataFrame(json_list)
-
+    df.set_index('Timestamp', inplace=True)
     # display the graphs
     for key in keys:
-        print(f"Key: {key}")
-        fig = px.line(df[key], x=df["Timestamp"], y=key, title=key)
+        if key == 'Timestamp': continue
+        graph_df = df[key].dropna()
+
+        fig = px.line(graph_df.astype(int), x=graph_df.index, y=key, title=key)
+        fig.update_layout(yaxis={'categoryorder':'total ascending'})
         fig.show()
 
 def main():
