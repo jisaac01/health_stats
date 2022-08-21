@@ -46,19 +46,26 @@ def display_graph(json_list, keys):
         [{"Depression":"4","Fatigue":"4","Headache":"6","Mental Focus":"6","Overall Body":"4","Overall Mental":"6","Pain":"6","Stomach Pain":"4","Timestamp":"2022-05-28 16201858818510"},
         {"Depression":"9","Fatigue":"10","Headache":"2","Mental Focus":"2","Overall Body":"8","Overall Mental":"2","Pain":"0","Stomach Pain":"8","Timestamp":"2022-05-28 16203258832033"}]
     '''
-    
-    #by_key = group_by_key(health_data)
-    # instead of using a dictionary, use health_data converted to a pandas dataframe\
-    df = pd.DataFrame(json_list)
-    df.set_index('Timestamp', inplace=True)
-    # display the graphs
-    for key in keys:
-        if key == 'Timestamp': continue
-        graph_df = df[key].dropna()
 
-        fig = px.line(graph_df.astype(int), x=graph_df.index, y=key, title=key)
-        fig.update_layout(yaxis={'categoryorder':'total ascending'})
-        fig.show()
+    df = pd.DataFrame(json_list)
+    # convert the timestamp to a date time object
+    df['Timestamp'] = pd.to_datetime(df['Timestamp'], format='%Y-%m-%d %H%M%S%f')
+    df = pd.melt(df, id_vars=['Timestamp'])
+
+    df['Timestamp'] = pd.DatetimeIndex(df['Timestamp']).normalize()
+    df['value'] = df['value'].dropna().astype(int)
+    df = df.groupby(['Timestamp', 'variable'], as_index=False).mean()
+
+    titles = ['Mental Focus', 'Depression', 'Anger Irritation', 'Dwelling', 'Happiness', 'Motivation', 'Overall Mental', 'Fatigue', 'Pain', 'Stomach Pain', 'Headache', 'Overall Body']
+    fig = px.bar(df, x='Timestamp', y='value', 
+        color='variable', 
+        facet_col='variable', facet_col_wrap=1, facet_row_spacing=0.02,
+        category_orders={'variable': titles}
+        )
+    fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1])) # remove the variable name from each title
+    
+    fig.for_each_yaxis(lambda y: y.update(title = ''))
+    fig.show()
 
 def main():
     ''' This function opens a file and reads the contents'''
